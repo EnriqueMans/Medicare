@@ -1,0 +1,19 @@
+Vendor OEC file(s) land on inbound server folder
+        │
+        ▼
+[Automic JOBP: OEC_MASTER_<VENDOR>]
+        │
+   ┌────┴─────────────────────────────────────────────┐
+   ▼                                                    │
+STEP 1  File detection / validation (FileEvent + shell) │
+   ▼                                                    │
+STEP 2  SQL*Loader ingest OEC → Oracle staging table    │
+   ▼                                                    │
+STEP 3  PL/SQL package: validate + convert OEC → EAF    │
+   ▼                                                    │
+STEP 4  .NET export utility: EAF table → EAF text file  │
+   ▼                                                    │
+STEP 5  Move EAF file to network app folder (Elements)  │
+   ▼                                                    │
+STEP 6  Audit closeout + archive/purge source file      │
+   └────────────────────────────────────────────────────┘
