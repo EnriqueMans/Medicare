@@ -102,6 +102,63 @@ CREATE TABLE VENDOR_CONFIG (
   CREATED_DATE        DATE DEFAULT SYSDATE
 );
 
+JOBP.OEC_MASTER
+│
+├─(1)─ JOBS.OEC_AUDIT_INIT
+│         │  [on RC=0] ──►
+│         │  [on RC≠0] ──► JOBS.OEC_ERROR_HANDLER ──► END
+│
+├─(2)─ JOBS.OEC_SQLLDR_LOAD
+│         │  [on RC=0] ──►
+│         │  [on RC≠0] ──► JOBS.OEC_ERROR_HANDLER ──► END
+│
+├─(3)─ JOBS.OEC_PLSQL_CONVERT
+│         │  [on RC=0] ──►
+│         │  [on RC≠0] ──► JOBS.OEC_ERROR_HANDLER ──► END
+│
+├─(4)─ JOBS.OEC_DOTNET_EXPORT
+│         │  [on RC=0] ──►
+│         │  [on RC≠0] ──► JOBS.OEC_ERROR_HANDLER ──► END
+│
+├─(5)─ JOBS.OEC_ARCHIVE_SOURCE
+│         │  [on RC=0] ──►
+│         │  [on RC≠0] ──► JOBS.OEC_ERROR_HANDLER (non-fatal: log + continue)
+│
+└─(6)─ JOBS.OEC_AUDIT_CLOSE
+          │  always runs (POST_PROCESS on JOBP, or last activity with force-run flag)
+
+
+SET SERVEROUTPUT ON
+VAR v_batch_id NUMBER
+DECLARE
+  v_id NUMBER;
+BEGIN
+  INSERT INTO AUDIT_INBOUND_FILES (VENDOR_CODE, FILE_NAME, FILE_PATH, PROCESS_STATUS)
+  VALUES ('&VENDOR_CODE#', '&FILE_NAME#', '&FILE_PATH#', 'PROCESSING')
+  RETURNING FILE_ID INTO :v_batch_id;
+
+  INSERT INTO AUDIT_FILE_LOG (VENDOR_CODE, SOURCE_FILE_NAME, IMPORT_START_TS,
+                              AUTOMIC_JOBP_NAME, AUTOMIC_RUN_ID)
+  VALUES ('&VENDOR_CODE#', '&FILE_NAME#', SYSDATE, 'JOBP.OEC_MASTER', '&$RUN_ID#')
+  RETURNING BATCH_ID INTO :v_batch_id;
+
+  COMMIT;
+  DBMS_OUTPUT.PUT_LINE('BATCH_ID=' || :v_batch_id);
+END;
+/
+EXIT SQL.SQLCODE;
+
+
+sqlplus -s user/pass@DB @update_audit_start.sql &BATCH_ID#
+sqlldr userid=user/pass@DB control=oec_generic.ctl \
+  data='&FILE_PATH#' log='&FILE_NAME#.log' bad='&FILE_NAME#.bad' \
+  data_opts="BATCH_ID=&BATCH_ID# VENDOR_CODE=&VENDOR_CODE#"
+RC=$?
+sqlplus -s user/pass@DB @update_audit_end.sql &BATCH_ID# $RC
+exit $RC
+
+
+
 
 
 
