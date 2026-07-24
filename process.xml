@@ -17,3 +17,96 @@ STEP 5  Move EAF file to network app folder (Elements)  │
    ▼                                                    │
 STEP 6  Audit closeout + archive/purge source file      │
    └────────────────────────────────────────────────────┘
+
+FA.OEC_FILE_WATCH_<VENDOR>          (File event, triggers JOBP)
+   │
+JOBP.OEC_MASTER
+   ├── JOBS.OEC_AUDIT_INIT          (insert AUDIT_FILE_LOG header)
+   ├── JOBS.OEC_SQLLDR_LOAD         (SQL*Loader via shell, generic .ctl)
+   ├── JOBS.OEC_PLSQL_CONVERT       (EXEC PKG_OEC_TO_EAF.P_CONVERT)
+   ├── JOBS.OEC_DOTNET_EXPORT       (OecEafExporter.exe)
+   ├── JOBS.OEC_ARCHIVE_SOURCE      (move/rename source file)
+   └── JOBS.OEC_AUDIT_CLOSE         (final status update / notification)
+
+
+-- Daily reconciliation view
+SELECT VENDOR_CODE, SOURCE_FILE_NAME, IMPORT_RECORD_CNT,
+       CONVERT_RECORD_CNT, EXPORT_RECORD_CNT, EXPORT_STATUS
+  FROM AUDIT_FILE_LOG
+ WHERE TRUNC(IMPORT_START_TS) = TRUNC(SYSDATE);
+
+-- Failed batches needing attention
+SELECT * FROM AUDIT_FILE_LOG WHERE IMPORT_STATUS = 'FAILED' OR CONVERT_STATUS = 'FAILED' OR EXPORT_STATUS = 'FAILED';
+
+OecEafExporter.exe -batchid <BATCH_ID> -vendor <VENDOR_CODE>
+
+
+EXEC PKG_OEC_TO_EAF.P_CONVERT(&&BATCH_ID);
+
+
+-- One row per file, per run, per vendor — the master audit record
+CREATE TABLE AUDIT_FILE_LOG (
+  BATCH_ID            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  VENDOR_CODE         VARCHAR2(20),
+  SOURCE_FILE_NAME    VARCHAR2(200),
+  SOURCE_FILE_SIZE    NUMBER,
+  SOURCE_FILE_HASH    VARCHAR2(64),      -- optional MD5/SHA for dupe detection
+  IMPORT_START_TS     DATE,
+  IMPORT_END_TS       DATE,
+  IMPORT_RECORD_CNT   NUMBER,
+  IMPORT_STATUS       VARCHAR2(20),      -- SUCCESS/FAILED/PARTIAL
+  CONVERT_START_TS    DATE,
+  CONVERT_END_TS      DATE,
+  CONVERT_RECORD_CNT  NUMBER,
+  CONVERT_STATUS      VARCHAR2(20),
+  EXPORT_START_TS     DATE,
+  EXPORT_END_TS       DATE,
+  EXPORT_FILE_NAME    VARCHAR2(200),
+  EXPORT_RECORD_CNT   NUMBER,
+  EXPORT_STATUS       VARCHAR2(20),
+  AUTOMIC_JOBP_NAME   VARCHAR2(100),
+  AUTOMIC_RUN_ID      VARCHAR2(50),
+  ERROR_MESSAGE       VARCHAR2(4000)
+);
+
+-- Detail/event log for step-level traceability and troubleshooting
+CREATE TABLE AUDIT_PROCESS_LOG (
+  LOG_ID              NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  BATCH_ID            NUMBER REFERENCES AUDIT_FILE_LOG(BATCH_ID),
+  PROCESS_STEP        VARCHAR2(50),   -- LOAD, CONVERT, EXPORT, ARCHIVE
+  STEP_STATUS         VARCHAR2(20),   -- START/SUCCESS/FAIL
+  MESSAGE             VARCHAR2(4000),
+  LOG_TIMESTAMP       DATE DEFAULT SYSDATE
+);
+
+-- Rejected/error records at the row level (for data quality audit)
+CREATE TABLE AUDIT_ERROR_RECORDS (
+  BATCH_ID            NUMBER,
+  RECORD_SEQ           NUMBER,
+  ERROR_STAGE         VARCHAR2(20),   -- LOAD/CONVERT
+  ERROR_DESC          VARCHAR2(1000),
+  RAW_DATA             VARCHAR2(4000),
+  LOG_TIMESTAMP        DATE DEFAULT SYSDATE
+);
+
+CREATE TABLE VENDOR_CONFIG (
+  VENDOR_CODE        VARCHAR2(20)  PRIMARY KEY,
+  VENDOR_NAME         VARCHAR2(100),
+  INBOUND_DIR         VARCHAR2(400),   -- where OEC lands
+  ARCHIVE_DIR         VARCHAR2(400),
+  OUTBOUND_DIR        VARCHAR2(400),   -- network folder Elements reads
+  FILE_MASK           VARCHAR2(100),   -- e.g. 'VEND01_OEC_%.txt'
+  SQLLDR_CTL_FILE     VARCHAR2(400),
+  EAF_OUTPUT_PREFIX   VARCHAR2(50),
+  ACTIVE_FLAG         CHAR(1) DEFAULT 'Y',
+  CREATED_DATE        DATE DEFAULT SYSDATE
+);
+
+
+
+
+
+
+
+
+
