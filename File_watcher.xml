@@ -1,0 +1,76 @@
+=========================================================================
+SIMPLE EXAMPLE: Automic watches the folder, Automic logs + moves the file
+=========================================================================
+No Oracle-side scheduling needed here -- Automic does the watching, and
+just calls plain SQL. This is the simplest of the options we've covered.
+
+Two Automic objects, one Oracle table.
+
+
+-------------------------------------------------------------------------
+STEP 1 -- Oracle table (run once)
+-------------------------------------------------------------------------
+
+CREATE TABLE file_watcher_log (
+    id              NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    file_name       VARCHAR2(500)  NOT NULL,
+    file_path       VARCHAR2(4000) NOT NULL,
+    dest_path       VARCHAR2(4000),
+    detected_at     TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+
+-------------------------------------------------------------------------
+STEP 2 -- FA object (File Event) in Automic
+-------------------------------------------------------------------------
+Object name : FA.INBOUND.DROP
+Agent       : the agent that can see /data/inbound
+Path        : /data/inbound
+Filename    : *.*
+Check       : enable "check file size" (e.g. 2 checks, 15s apart) so it
+              doesn't fire on a file that's still being written
+Action      : Start Task -> JOBS.LOG_AND_MOVE_FILE  (Step 3)
+
+Activate the FA object once configured.
+
+
+-------------------------------------------------------------------------
+STEP 3 -- JOBS object (SQL) in Automic
+-------------------------------------------------------------------------
+Object name : JOBS.LOG_AND_MOVE_FILE
+Login object: your Oracle DB login object
+Script tab:
+
+    INSERT INTO file_watcher_log (file_name, file_path, dest_path)
+    VALUES (
+        '&$AE_FILE_NAME#',
+        '&$AE_PATH_NAME#/&$AE_FILE_NAME#',
+        '/data/processed/&$AE_FILE_NAME#'
+    );
+    COMMIT;
+
+Post-process tab (moves the physical file after the insert succeeds --
+run as an OS script step on the same agent as the FA object):
+
+    mv "&$AE_PATH_NAME#/&$AE_FILE_NAME#" "/data/processed/&$AE_FILE_NAME#"
+
+(&$AE_FILE_NAME# and &$AE_PATH_NAME# are populated automatically by
+Automic from the triggering FA object. If your Automic version names
+these variables differently, check Process Monitoring > Variables on a
+completed run of JOBS.LOG_AND_MOVE_FILE to confirm the exact names.)
+
+
+-------------------------------------------------------------------------
+THAT'S IT
+-------------------------------------------------------------------------
+Drop a file in /data/inbound ->
+  FA.INBOUND.DROP detects it ->
+  JOBS.LOG_AND_MOVE_FILE inserts a row, then moves the file.
+
+Check it worked:
+    SELECT * FROM file_watcher_log ORDER BY detected_at DESC;
+
+If you later want more (checksum, error handling, dedup on re-drops,
+retry logic), the earlier oracle_native_filewatcher.sql and
+automic_filewatcher_setup.txt files have the fuller version -- this one
+is intentionally stripped down to just "detect, log, move."
