@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<POVERGuide version="1.0" source="MAPD POVER Special Batch File Process (CMS) + MAPD PCUG v19.4">
+
+  <Overview>
+    <Description>
+      Guide for submitting a Plan Submitted Rollover (POVER) special batch file to CMS via MARx.
+      Requires a two-step process: (1) request approval via MARx UI, (2) submit the POVER batch file.
+    </Description>
+  </Overview>
+
+  <Step1_ApprovalRequest name="Special Batch File Approval Request">
+    <Location>MARx UI &gt; Transactions &gt; File Submission Request (Screen M317)</Location>
+    <RequiredRole>MCO Representative Transmitter</RequiredRole>
+    <Action>New Request</Action>
+    <Fields>
+      <Field name="BatchFileType" required="true">Plan Submitted Rollover</Field>
+      <Field name="HeaderDate" format="MM/DD/YYYY" required="true"/>
+      <Field name="ApplicationDate" format="MM/DD/YYYY" required="true">
+        Must be present, unchanged, on every transaction in the POVER file.
+      </Field>
+      <Field name="TransactionType" required="true">61 - Enrollment</Field>
+      <Field name="RolledToContract" required="true"/>
+      <Field name="RolledToPBP" required="true"/>
+      <Field name="ElectionType" required="true">C - SEP for Plan-submitted rollovers</Field>
+      <Field name="EffectiveDate" format="MM/DD/YYYY" required="true">
+        Usually same as Header Date.
+      </Field>
+      <Field name="Count" required="true">
+        Exact number of TC 61 transactions to be submitted for this contract/PBP; must match exactly.
+      </Field>
+    </Fields>
+    <Note>Submission triggers an automated email to CMS approvers. Do NOT submit the batch file until approval is received.</Note>
+  </Step1_ApprovalRequest>
+
+  <Step2_HeaderRecord name="POVER Batch File Header Record">
+    <Field name="BatchFileType" required="true">POVER</Field>
+    <Field name="CMSApprovalRequestID" required="true">From the approved M317 UI request</Field>
+    <Field name="HeaderDate" format="MMYYYY" required="true"/>
+  </Step2_HeaderRecord>
+
+  <Step2_DetailRecord name="TC 61 Enrollment Detail Record" recordLength="300">
+
+    <RequiredFields>
+      <Field item="1" name="HIC#" position="1-12" size="12" required="true"/>
+      <Field item="2" name="Surname" position="13-24" size="12" required="true"/>
+      <Field item="3" name="FirstName" position="25-31" size="7" required="true"/>
+      <Field item="5" name="GenderCode" position="33" size="1" required="true"/>
+      <Field item="6" name="BirthDate" position="34-41" size="8" format="YYYYMMDD" required="true"/>
+      <Field item="7" name="EGHPFlag" position="42" size="1" required="true"/>
+      <Field item="8" name="PBPNumber" position="43-45" size="3" required="true">Rolled-to PBP</Field>
+      <Field item="9" name="ElectionType" position="46" size="1" required="true">C - SEP for Plan-submitted rollovers</Field>
+      <Field item="10" name="ContractNumber" position="47-51" size="5" required="true">Rolled-to Contract</Field>
+      <Field item="11" name="ApplicationDate" position="52-59" size="8" format="YYYYMMDD" required="true">Must match approved POVER request</Field>
+      <Field item="12" name="TransactionCode" position="60-61" size="2" required="true">61</Field>
+      <Field item="14" name="EffectiveDate" position="64-71" size="8" format="YYYYMMDD" required="true">Must match approved POVER request</Field>
+      <Field item="17" name="ESRDOverride" position="80" size="1" required="true"/>
+      <Field item="18" name="PremiumWithholdOption_PartsCD" position="81" size="1" required="conditional">
+        Required for all plan types except HCPP, COST 1 without drug, COST 2 without drug, CCIP/FFS demo, MSA/MA, MSA/demo plans
+      </Field>
+      <Field item="19" name="PartCPremiumAmount" position="82-87" size="6" format="XXXXvXX" required="conditional">
+        Required for all plan types except HCPP, COST 1, COST 2, CCIP/FFS demo, MSA/MA, MSA/demo plans
+      </Field>
+      <Field item="21" name="CreditableCoverageFlag" position="94" size="1" required="true">Included on the POVER request</Field>
+      <Field item="22" name="NumberOfUncoveredMonths" position="95-97" size="3" required="conditional">Required for all Part D plans; otherwise blank</Field>
+      <Field item="29" name="EnrollmentSource" position="171" size="1" required="true">N - Rollover by Plan Transactions</Field>
+      <Field item="30" name="RolledFromContract" position="172-176" size="5" required="true">Required for rollover enrollment transactions on a POVER file</Field>
+      <Field item="31" name="RolledFromPBP" position="177-179" size="3" required="true">Required for rollover enrollment transactions on a POVER file</Field>
+      <Field item="34" name="PartDRxBIN" position="225-230" size="6" required="conditional">Required for all Part D plans except PACE National and MMP; otherwise blank</Field>
+      <Field item="35" name="PartDRxPCN" position="231-240" size="10" required="conditional">Required for all Part D plans; otherwise blank</Field>
+      <Field item="36" name="PartDRxGroup" position="241-255" size="15" required="conditional">Required for all Part D plans; otherwise blank</Field>
+      <Field item="37" name="PartDRxID" position="256-275" size="20" required="conditional">Required for all Part D plans except PACE National and MMP; otherwise blank</Field>
+    </RequiredFields>
+
+    <ConditionalFields>
+      <Field item="4" name="MiddleInitial" position="32" size="1" required="false"/>
+      <Field item="15" name="SegmentID" position="72-74" size="3" required="conditional">Rolled-to Segment, if applicable</Field>
+      <Field item="23" name="EmployerSubsidyEnrollmentOverrideFlag" position="98" size="1" required="conditional">
+        Required if beneficiary has Employer Subsidy status for Part D; otherwise blank
+      </Field>
+      <Field item="24" name="PartDOptOutFlag" position="99" size="1" required="conditional">
+        Required when changing PBPs. Y = Opting Out of Part D; N = Opting In to Part D; otherwise blank
+      </Field>
+      <Field item="26" name="SecondaryDrugInsuranceFlag" position="135" size="1" required="conditional">
+        For auto/facilitated enrollments and rollovers, value should be blank. For non-Part D plans, value should be blank.
+      </Field>
+      <Field item="27" name="SecondaryRxID" position="136-155" size="20" required="conditional">Required when SecondaryDrugInsuranceFlag = Y; otherwise blank</Field>
+      <Field item="28" name="SecondaryRxGroup" position="156-170" size="15" required="conditional">Required when SecondaryDrugInsuranceFlag = Y; otherwise blank</Field>
+      <Field item="33" name="PlanAssignedTransactionTrackingID" position="210-224" size="15" required="false"/>
+      <Field item="38" name="SecondaryDrugBIN" position="276-281" size="6" required="conditional">Required when SecondaryDrugInsuranceFlag = Y; otherwise blank</Field>
+      <Field item="39" name="SecondaryDrugPCN" position="282-291" size="10" required="conditional">Required when SecondaryDrugInsuranceFlag = Y; otherwise blank</Field>
+    </ConditionalFields>
+
+  </Step2_DetailRecord>
+
+  <CommonIssues>
+    <Issue>
+      Submitting a POVER file without a prior approved M317 request results in automatic rejection.
+      Error: "POVER SPECIAL FILE DETECTED, PROCESSING IS NOT APPROVED OR REQUEST ID IS NOT RECOGNIZED"
+    </Issue>
+    <Issue>
+      Transactions that fail validation edits after acceptance do not trigger a rejection email;
+      they appear instead on the Batch Completion Status Summary (BCSS) report.
+    </Issue>
+    <Issue>
+      If the POVER file is not processed correctly, it can be edited and resubmitted (as long as it was not already processed).
+    </Issue>
+  </CommonIssues>
+
+</POVERGuide>
