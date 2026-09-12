@@ -1,0 +1,119 @@
+# ---------------------------------------------------------------------------
+# EAF -> DTRR field mapping
+# Best-effort mapping based on field name/description matching between the
+# EAF layout (222 fields) and the DTRR fixed-width layout (107 named fields).
+# These are two independently defined specs, not an official CMS crosswalk —
+# verify against your source docs before relying on this in production.
+#
+# Fields with no reasonable EAF counterpart are set to None (mostly CARA/
+# opioid edit fields, IC model fields, system timestamps, and CMS-internal
+# fillers that only exist on the CMS reply side).
+# ---------------------------------------------------------------------------
+
+dtrr['beneficiary_id']                          = eaf['mbi']                          # Field 20: Member MBI*
+dtrr['surname']                                  = eaf['member_last_name']             # Field 9
+dtrr['first_name']                               = eaf['member_first_name']            # Field 7
+dtrr['middle_initial']                           = eaf['member_middle_initial']        # Field 8
+dtrr['sex_code']                                 = eaf['member_gender']                # Field 11
+dtrr['date_of_birth']                            = eaf['member_birth_date']            # Field 10
+dtrr['record_type']                              = None                                # DTRR-side only (reply record marker)
+dtrr['contract_number']                          = eaf['contract_id']                  # Field 3
+dtrr['state_code']                               = eaf['member_state']                 # Field 16
+dtrr['county_code']                              = None                                # Not present on EAF
+dtrr['disability_indicator']                     = None                                # Not present on EAF
+dtrr['hospice_indicator']                        = None                                # Not present on EAF
+dtrr['institutional_nhc_hcbs_indicator']         = None                                # Not present on EAF
+dtrr['esrd_indicator']                           = eaf['esrd']                         # Field 50
+dtrr['trc']                                      = None                                # CMS-generated reply code, not submitted
+dtrr['tc']                                       = eaf['transaction_type']             # Field 74
+dtrr['entitlement_type_code']                    = None                                # Not present on EAF
+dtrr['effective_date']                           = eaf['effective_date']               # Field 73
+dtrr['wa_indicator']                             = None                                # Not present on EAF
+dtrr['pbp_id']                                   = eaf['pbp_id']                       # Field 4
+dtrr['filler_75']                                = None
+dtrr['transaction_date']                         = eaf['submit_date']                  # Field 2
+dtrr['ui_initiated_change_flag']                 = None                                # System-generated
+dtrr['item24_trc_dependent']                     = None                                # CMS reply-side only
+dtrr['district_office_code']                     = None                                # Not present on EAF
+dtrr['prev_part_d_contract_pbp']                 = None                                # Not present on EAF (history-derived)
+dtrr['sep_reason_code']                          = eaf['sep_reason_code']              # Field 64
+dtrr['filler_110']                               = None
+dtrr['source_id']                                = eaf['sales_location']               # Field 80
+dtrr['prior_pbp_id']                             = None                                # Not present on EAF
+dtrr['application_date']                         = eaf['application_sign_date']        # Field 75
+dtrr['ui_user_org_designation']                  = None                                # Not present on EAF
+dtrr['out_of_area_flag']                         = None                                # Not present on EAF
+dtrr['segment_number']                           = eaf['segment_id']                   # Field 5
+dtrr['part_c_premium']                           = None                                # CMS-calculated, not submitted
+dtrr['part_d_premium']                           = None                                # CMS-calculated, not submitted
+dtrr['election_type_code']                       = eaf['election_type']                # Field 78
+dtrr['enrollment_source_code']                   = eaf['sales_location']               # Field 80 (closest analog)
+dtrr['part_d_opt_out_flag']                      = eaf['part_d_opt_out']               # Field 63
+dtrr['premium_withhold_option']                  = eaf['premium_withhold']             # Field 144
+dtrr['cumulative_uncovered_months']              = eaf['uncovered_months']             # Field 77
+dtrr['creditable_coverage_flag']                 = eaf['creditable_coverage']           # Field 76
+dtrr['employer_subsidy_override_flag']           = eaf['employer_subsidy']             # Field 90
+dtrr['processing_timestamp']                     = None                                # System-generated
+dtrr['end_date']                                 = eaf['span_end_date']                # Field 110
+dtrr['submitted_uncovered_months']               = eaf['uncovered_months']             # Field 77 (same source as above)
+dtrr['filler_189']                               = None
+dtrr['preferred_language_other_than_english']    = eaf['language']                     # Field 49
+dtrr['accessible_format']                        = eaf['accessibility_format']         # Field 174
+dtrr['secondary_drug_insurance_flag']            = eaf['secondary_rx_flag']            # Field 91
+dtrr['secondary_rx_id']                          = eaf['secondary_rx_id']              # Field 92
+dtrr['secondary_rx_group']                       = eaf['secondary_rx_group']           # Field 93
+dtrr['eghp']                                     = eaf['eghp_flag']                    # Field 88
+dtrr['part_d_lips_level']                        = eaf['lis_copay_level_id']           # Field 61
+dtrr['low_income_copay_category']                = eaf['deemed_copay_level_id']        # Field 62
+dtrr['low_income_period_effective_date']         = eaf['lis_effective_date']           # Field 122
+dtrr['part_d_lep_amount']                        = None                                # CMS-calculated
+dtrr['part_d_lep_waived_amount']                 = None                                # CMS-calculated
+dtrr['part_d_lep_subsidy_amount']                = None                                # CMS-calculated
+dtrr['low_income_part_d_premium_subsidy']        = eaf['subsidy_percentage']           # Field 59
+dtrr['part_d_rx_bin']                            = eaf['rx_bin']                       # Field 146
+dtrr['part_d_rx_pcn']                            = eaf['rx_pcn']                       # Field 147
+dtrr['part_d_rx_group']                          = eaf['rx_group']                     # Field 145
+dtrr['part_d_rx_id']                             = eaf['primary_rx_id']                # Field 121
+dtrr['secondary_rx_bin']                         = eaf['secondary_rx_bin']             # Field 95
+dtrr['secondary_rx_pcn']                         = eaf['secondary_rx_pcn']             # Field 148
+dtrr['de_minimis_differential_amount']           = None                                # CMS-calculated
+dtrr['msp_status_flag']                          = None                                # Not present on EAF
+dtrr['low_income_period_end_date']               = eaf['lis_term_date']                # Field 123
+dtrr['low_income_subsidy_source_code']           = eaf['deemed_reason_code']           # Field 60
+dtrr['enrollee_type_flag_pbp_level']             = None                                # Not present on EAF
+dtrr['application_date_indicator']               = None                                # System-derived flag
+dtrr['trc_short_name']                           = None                                # CMS reply-side only
+dtrr['disenrollment_reason_code']                = eaf['disenrollment_reason']          # Field 94
+dtrr['mmp_opt_out_flag']                         = eaf['mppp_action']                  # Field 191 (closest analog)
+dtrr['cleanup_id']                               = None                                # CMS-internal
+dtrr['cara_status_add_update_delete_flag']       = None                                # Not present on EAF
+dtrr['pos_drug_edit_status']                     = None                                # Not present on EAF
+dtrr['drug_class']                               = None                                # Not present on EAF
+dtrr['pos_drug_edit_code']                       = None                                # Not present on EAF
+dtrr['cara_status_notification_start_date']      = None                                # Not present on EAF
+dtrr['cara_status_implementation_start_date']    = None                                # Not present on EAF
+dtrr['cara_status_notification_end_date']        = None                                # Not present on EAF
+dtrr['hospice_provider_number']                  = None                                # Not present on EAF
+dtrr['ic_model_type_indicator']                  = None                                # Not present on EAF
+dtrr['ic_model_end_date_reason_code']            = None                                # Not present on EAF
+dtrr['ic_model_benefit_status']                  = None                                # Not present on EAF
+dtrr['updated_medicaid_status_community_raf']    = eaf['medicaid_level']               # Field 166
+dtrr['cara_status_implementation_end_date']      = None                                # Not present on EAF
+dtrr['prescriber_limitation']                    = None                                # Not present on EAF
+dtrr['pharmacy_limitation']                      = None                                # Not present on EAF
+dtrr['filler_456']                               = None
+dtrr['system_assigned_transaction_tracking_id']  = eaf['unique_key']                   # Field 106
+dtrr['plan_assigned_transaction_tracking_id']    = eaf['confirmation_number']          # Field 1
+dtrr['relationship_agent']                       = eaf['relationship_to_enrollee']      # Field 189, value == 1
+dtrr['relationship_broker']                      = eaf['relationship_to_enrollee']      # Field 189, value == 2
+dtrr['relationship_ship_counselors']             = eaf['relationship_to_enrollee']      # Field 189, value == 3
+dtrr['relationship_authorized_reps']             = eaf['relationship_to_enrollee']      # Field 189, value == 4
+dtrr['relationship_other_third_parties']         = eaf['relationship_to_enrollee']      # Field 189, value == 5
+dtrr['relationship_self']                        = eaf['relationship_to_enrollee']      # Field 189, value == 6
+dtrr['relationship_form_left_blank']             = eaf['relationship_to_enrollee']      # Field 189, value == 7
+dtrr['national_producer_number']                 = eaf['national_producer_number']      # Field 190
+dtrr['oec_indicator']                            = eaf['application_type']              # Field 143, value == 4 (OEC/CMS)
+dtrr['oec_application_date']                     = eaf['submit_date']                   # Field 2 (used when Field 143 == 4)
+dtrr['oec_application_number']                   = eaf['confirmation_number']           # Field 1 (used as OEC App number)
+dtrr['beneficiary_phone_number']                 = eaf['member_phone']                  # Field 18
+dtrr['beneficiary_email_address']                = eaf['member_email_address']          # Field 19
